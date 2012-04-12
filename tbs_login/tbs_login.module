@@ -1,0 +1,386 @@
+<?php
+
+/**
+ * Implementation of hook_views_api()
+ */
+function tbs_login_views_api() {
+
+	return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'tbs_login') . '/includes',    
+  );
+}
+/**
+ * Implementing hook_entity_info()
+ */
+function tbs_login_entity_info() {
+   $tbs_login_info['department'] = array(
+		'label' => t('Department'),
+		'controller class' => 'DepartmentController',
+		'base table' => 'tbs_login_department',
+		'uri callback' => 'department_uri',
+		'fieldable' => TRUE,
+		'entity keys' => array(
+		     'id' => 'dep_id',
+		),
+		'static cache' => TRUE,
+		'bundles' => array(
+			'department' => array(
+				'label' => 'Department',
+			'admin' => array(
+				'path' => 'admin/structure/department/manage',
+				'access arguments' => array('access tbs settings'),
+				),
+			),
+		),
+		'view modes' => array(
+			'full' => array(
+				'label' => t('Full Department Content'),
+				'custom settings'=> False,
+				),
+			'teaser' => array(
+				'label' => t('Teaser Department Content'),
+				'custom settings' => False,
+				),
+			),
+		
+		);
+		return $tbs_login_info;
+}
+function department_uri($department) {
+
+	return array(
+	     'path' => 'department/' . $department->id,
+		);
+}
+
+function department_load($dep_id = NULL, $reset = FALSE) {
+	$dep_ids = (isset ($dep_id) ? array($dep_id) : array());
+	$department = department_load_multiple($dep_ids,$reset);
+	return $department ? reset($department) : FALSE;
+	
+}
+
+function department_load_multiple($pids = array(), $conditions = array(), $reset = FALSE){
+  return entity_load('department', $pids, $conditions, $reset);
+}
+
+/**
+ * Implements hook_init().
+ */
+function tbs_login_init() {
+  // Add an item to the current user's history.
+  //tbs_login_department_fetch();
+}
+
+/**
+ * Implementing hook_permission
+ */
+ function tbs_login_permission() {
+	return array( 
+	  'administer tbs login' => array(
+	     'title' => t('Administer Travel Booking System'),
+		 'description' => t('Perform administrator task for Travel Booking System'),
+		 'restrict access' => true,
+		 ),
+	   'view hidden tabs' => array(
+	      'title' => t('View Hidden login Tabs'),
+		  'description' => t('This is to view the hidden login tabs'),
+		  ),
+		'create a department' => array(
+	      'title' => t('Create a departmeny'),
+		  'description' => t('This is to create a department'),
+		  ),
+	   
+	   'access tbs settings' => array(
+	       'title' => t('View Settings tab'),
+		   'description' => t('this is to view the tbs settings tab.'),
+		 )
+		);
+ }
+ 
+ /**
+ * Implementing hook_menu
+ */
+ function tbs_login_menu() {
+ 
+   $items['backdoor'] = array(
+    'title' => 'Admin Login',
+    'description' => 'Use when can\'t login externally',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('user_login'),
+    'access arguments' => array('access content'),
+  );
+  
+  $items['department'] = array(
+    'title' => 'Department settings',
+	'description' => t('this is to setup the departments for the login form'),
+	'page callback' => 'drupal_get_form',
+	'page arguments' => array('tbs_login_department_form'),
+	'access arguments' => array('administer tbs login'), 
+	'type' => MENU_NORMAL_ITEM,
+	'menu_name' => 'navigation',
+	'file' => 'tbs_login_form.deparment.inc',	
+  );
+  $items['department/more'] = array(
+    'title' => 'All Departments',
+    'description' => 'this is a list of all the departments',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tbs_login_more_form'),
+    'access callback' => TRUE,
+    'weight' => 1,
+	'file' => 'tbs_login_form.more.inc',
+  );
+  $items['department/autocomplete'] = array(
+    'description' => 'A callback for our search autocomplete.',
+    'page callback' => 'input_search_autocomplete',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  $items['department/department-delete'] = array(
+    'title' => 'Delete Department',
+    'page callback' => 'tbs_login_form_delete_page',
+    'access callback' => TRUE,
+	'weight' => 2,
+	'file' => 'tbs_login_form.delete.inc',
+  );
+  $items['department/departmentupdate'] = array(
+    'title' => 'Update Department',
+	'page callback' => 'drupal_get_form',
+	'page arguments' => array('tbs_login_form_change_page'),
+	'access arguments' => array('administer tbs login'), 
+	'weight' => 3,
+	'type' => MENU_CALLBACK,
+	'file' => 'tbs_login_form.change.inc',
+  );
+  $items['admin/structure/department/manage'] = array(
+	'title' => 'Department Admin',
+	'description' => 'Manage Department structure',
+	'page callback' => 'department_info',
+	'access arguments' => array('access tbs settings'),
+	);
+  $items['department/%department'] = array(
+	'title callback' => 'department_page_title',
+	'title arguments' => array(1),
+	'page callback' => 'department_page_view',
+	'page arguments' => array(1),
+	'access arguments' => array('access tbs settings'),
+	'type' => MENU_CALLBACK,
+  );
+  
+  $items['department/add'] = array(
+    'title' => 'Add department!',
+    'page callback' => 'department_add',
+    'access arguments' => array('create a department'),
+  );
+  
+  return $items;
+ }
+ 
+ function department_info() {
+  return ('Welcome to the administration page for your department!');
+}
+ function department_page_title($department){
+  return $department->dep_id;
+}
+
+function department_page_view($department, $view_mode = 'full'){
+  $department->content = array();
+
+  // Build fields content.
+  field_attach_prepare_view('department', array($department->dep_id => $department), $view_mode);
+  entity_prepare_view('department', array($department->pid => $department));
+  $department->content += field_attach_view('department', $department, $view_mode);
+
+  return $department->content;
+}
+
+function department_field_extra_fields() {
+  $return = array();
+  $return['department']['department'] = array(
+    'form' => array(
+      'note' => array(
+        'label' => t('Note'),
+        'description' => t('department Note'),
+      ),
+    ),
+  );
+
+  return $return;
+}
+function department_add() {
+  global $user;
+  
+  $department = (object) array (
+    'dep_id' => $user->uid,
+    'dep_name' => variable_get('tbs_login_departments'),
+    'entereddate' => REQUEST_TIME,
+  );
+  return drupal_get_form('department_add_form', $department);
+}
+
+function department_add_form($form, &$form_state, $department) {
+	$form['access'] = array(
+		'#type' => 'fieldset',
+		'#title' => t('Department Settings'),
+		'#collapsible' => TRUE,
+		'#collapsed' => FALSE,
+		'#prefix' => '<div class="department">',
+		'#suffix' => '</div>',
+	);
+	$form['access']['tbs_login_departments'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Enter Deparments'),
+		'#default_value' => $department->dep_name,
+		'#description' => t('Enter the list of department separated by commas eg: Administrator, Geology, ICT'),
+		'#autocomplete_path' => 'department/autocomplete',
+	);
+  
+	$form['access']['submit'] = array(
+		'#type' => 'submit',
+		'#value' => 'Submit',
+	);
+	
+	 field_attach_form('department', $department, $form, $form_state);
+  
+  return $form;
+}
+
+function department_add_form_validate($form, &$form_state) {
+  $department_submisttion = (object) $form_state['values'];
+  field_attach_form_validate('department', $department_submisttion, $form, $form_state);
+}
+
+function department_add_form_submit($form, &$form_state) {
+  $department_submission = (object) $form_state['values'];
+  dsm($department_submission);
+  field_attach_submit('department', $deparment_submission, $form, $form_state);
+  $department = department_save($department_submission);
+  $form_state['redirect'] = "department/$department->dep_id";
+}
+function department_save(&$department) {
+  return entity_get_controller('department')->save($department);
+}
+ 
+ /**
+  * Implementing hook_form_alter() 
+  */
+  function tbs_login_form_alter(&$form, $form_state, $form_id) {
+  
+      $options= tbs_login_department_fetch();
+      switch($form_id) {
+	     case 'user_login':
+		 case 'user_login_block':
+		     $form['tbs_login_department'] = array(
+                  '#type' => 'select',
+                  '#title' => t('Department'),
+                  '#options' =>  drupal_map_assoc($options),
+                  '#default_value' => 'landd' ,
+				  '#required' => TRUE,
+				  '#weight' => -10,
+                  '#description' => t('Select one department.'),
+                );
+				
+				$form['tbs_login_badgenumber'] = array(
+                      '#type' => 'textfield',
+                      '#title' => t('Bafge Number'),
+                      '#default_value' => '',
+                      '#size' => 20,
+                      '#maxlength' => 60,
+                      '#required' => TRUE,
+					  '#weight' => -9,
+                );
+				
+		 // only allow for Drupal login fields if this is the /backdoor page
+         //if (strcmp(current_path(),"backdoor")!=0) {
+         //   $form['name']['#access'] = FALSE;
+         //   $form['pass']['#access'] = FALSE;
+         //   $form['#submit'][] = 'tbs_login_submit';
+         //    unset($form['#validate']);
+         //   $form['#validate'][] = 'tbs_login_validate';
+         //}
+            break;
+	  }
+  }
+
+  /**
+   * Implementation of hook_menu_alter().
+   */
+  function tbs_login_menu_alter(&$items) {
+  
+   $items['user/register']['access callback'] = 'user_access';
+   $items['user/register']['access arguments'] = array('view hidden tabs');
+   //$items['user/register']['type'] = MENU_CALLBACK;
+   
+   $items['user/password']['access callback'] = 'user_access';
+   $items['user/password']['access arguments'] = array('view hidden tabs');
+   //$items['user/password']['type'] = MENU_CALLBACK;
+
+   //unset($items['user/register']);   
+   //unset($items['user/password']);
+   
+  }
+  /**
+   * custom tbs_login_submit
+   */
+   function tbs_login_submit($form, &$form_state) {
+     drupal_set_message(t('Your form has been saved.'));
+   }
+   
+   /**
+    * custom tbs_login_validate
+	*/
+	function tbs_login_validate ($form, &$form_state) {
+	  drupal_set_message(t('Your form has been validated'));
+	}
+/**
+ * Implementing hook_theme
+ */
+ function tbs_login_theme(&$existing, $type, $theme, $path) {
+  $hooks['user_login'] = array(
+    'template' => 'templates/user_login',
+    'render element' => 'form',
+    // other theme registration code...
+  );
+  return $hooks;
+}
+
+function tbs_login_preprocess_user_login(&$variables) {
+  $variables['intro_text'] = t('This is my awesome login form');
+  $variables['rendered'] = drupal_render_children($variables['form']);
+}
+
+function tbs_login_department_fetch() {
+
+  
+    
+  $department_options = array();
+  $result = db_query('SELECT n.uid,n.dep_name,n.entereddate FROM {tbs_login_department} n ');
+// Result is returned as a iterable object that returns a stdClass object on each iteration
+   foreach ($result as $record) {
+  // Perform operations on $record->title, etc. here.
+  // in this example the available data would be mapped to object properties:
+  // $record->nid, $record->title, $record->created
+    $department_options[] = $record->dep_name;
+   // drupal_set_message(t('Department: ' . $record->dep_name . '  Date Entered:' . $record->entereddate));
+  }
+  return $department_options;
+}
+ /**
+ * Menu callback; Retrieve a JSON object containing autocomplete suggestions for search.
+ *
+ * This loops through the 'input_search_history' variable and finds matches to currently
+ * typed search phrase. Then, drupal_json_output is called to format the result as json,
+ * which the autocomplete script expects.
+ */
+function input_search_autocomplete($string = '') {
+  $matches = array();
+  dsm($string);
+  $search_history = variable_get('department_search_history', array());
+  foreach ($search_history as $phrase) {
+    if (stristr($phrase, $string)) {
+      $matches[$phrase] = $phrase;
+    }
+  }
+  drupal_json_output($matches);
+}

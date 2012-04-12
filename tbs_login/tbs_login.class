@@ -1,0 +1,32 @@
+<?php
+
+ class data
+ {
+    function tbs_login_test($value) {
+     $departments = $value;
+    
+     $login_departments = explode(", ", $departments);
+	 
+	 foreach($login_departments as $value)
+	 {
+	     if(!preg_match('/^[a-zA-Z ]+$/',$value)) {
+                form_set_error('tbs_login_departments', t("Sorry, this @values is not correct try again.", array('@values' => $value)));
+		 }
+	 }
+	 return true;
+    }
+	function tbs_login_validate_department($form_value) {
+		$departments = $form_value;
+    
+		$login_departments = explode(", ", $departments);
+	 
+		foreach($login_departments as $value)
+		{
+			if(!preg_match('/^[a-zA-Z ]+$/',$value)) {
+                form_set_error('tbs_login_departments', t("Sorry, this @values is not correct try again.", array('@values' => $value)));
+		 }
+		}
+	}
+
+    	
+ }

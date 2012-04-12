@@ -1,0 +1,90 @@
+<?php
+// $Id$
+/**
+ * Implements hook_install().
+ */
+function tbs_login_install() {
+  variable_set('tbs_login_departments','Administration, Geology, It, L and D');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function tbs_login_uninstall() {
+   variable_del('tbs_login_departments');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function tbs_login_schema() {
+
+$schema['tbs_login_data'] = array(
+  'description' => 'Tbs_login table',
+  'fields' => array(
+    'tid' => array(
+      'description' => 'this is the index',
+      'type' => 'serial',
+      'not null' => TRUE,
+    ),
+    'uid' => array(
+      'description' => 'Tbs_login User ID',
+      'type' => 'int',
+      'not null' => FALSE,
+    ),
+    'sid' => array(
+      'description' => 'Tbs_login session ID',
+      'type' => 'varchar',
+      'length' => '128',
+      'not null' => FALSE,
+    ),
+    'department' => array(
+      'description' => 'Tbs_login department',
+      'type' => 'varchar',
+      'length' => '128',
+      'not null' => FALSE,
+    ),
+    'badgenumber' => array(
+      'description' => 'Tbs_login Badge Number',
+      'type' => 'varchar',
+      'length' => '128',
+      'not null' => FALSE,
+    ),
+    'loggedindate' => array(
+      'description' => 'Tbs_login Logged in date',
+      'type' => 'int',
+      'not null' => FALSE,
+    ),
+  ),
+  'primary key' => array('tid'),
+);
+
+$schema['tbs_login_department'] = array(
+  'description' => 'Tbs_login Department table',
+  'fields' => array(
+    'dep_id' => array(
+      'description' => 'this is the index',
+      'type' => 'serial',
+      'not null' => TRUE,
+    ),
+    'uid' => array(
+      'description' => 'Tbs_login User ID',
+      'type' => 'int',
+      'not null' => FALSE,
+    ),
+    'dep_name' => array(
+      'description' => 'Tbs_login department',
+      'type' => 'varchar',
+      'length' => '128',
+      'not null' => FALSE,
+    ),
+    'entereddate' => array(
+      'description' => 'Tbs_login Logged in date',
+      'type' => 'int',
+      'not null' => FALSE,
+    ),
+  ),
+  'primary key' => array('dep_id'),
+);
+	return $schema;
+} 

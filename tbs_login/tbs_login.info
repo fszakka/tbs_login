@@ -1,0 +1,12 @@
+name=Travel Booking System Login
+description = this is the login for the travel booking system 
+core = 7.x
+version = 1.0.0.1
+package = TBS
+dependencies[] = views
+configure = admin/config/tbs_login
+files[] = tbs_login.module
+files[] = tbs_login.install
+files[] = tbs_login.class
+files[] = includes/tbs_login.views.inc
+files[] = department.controller.inc
